@@ -1,5 +1,7 @@
 package ac.uk.iisa.claimcheck.ui;
 
+import ac.uk.iisa.claimcheck.service.ClaimChecker;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.FocusAdapter;
@@ -163,9 +165,13 @@ public class GUI extends JFrame {
             return;
         }
 
-        hintLabel.setText("Response and source passages entered. Analysis is not connected yet.");
+
+        hintLabel.setText("Response and source passages entered.");
         resultsTextArea.setForeground(new Color(185, 190, 199));
-        resultsTextArea.setText(
-                "Your response is ready for review. Claim extraction and evidence matching are not connected yet.");
+        resultsTextArea.setText("Your response is ready for review. Claim extraction and evidence matching are not connected yet.");
+
+        ClaimChecker checker = new ClaimChecker();
+        String result = checker.check(response, sources);
+        resultsTextArea.setText(result);
     }
 }
