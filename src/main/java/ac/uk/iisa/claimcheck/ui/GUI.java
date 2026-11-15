@@ -24,6 +24,7 @@ public class GUI extends JFrame {
     private JTextArea resultsTextArea;
     private JTextArea sourcesTextArea;
     private JButton checkButton;
+    private JCheckBox useAiCheckBox;
 
     private static final String INPUT_HINT =
             "Paste the AI-generated answer here. You’ll be able to inspect its claims and supporting evidence.";
@@ -75,6 +76,12 @@ public class GUI extends JFrame {
         sourcesLabel.setForeground(ink);
         hintLabel.setFont(normal.deriveFont(Font.PLAIN, 13f));
         hintLabel.setForeground(muted);
+
+        useAiCheckBox.setFont(normal.deriveFont(Font.PLAIN, 14f));
+        useAiCheckBox.setForeground(ink);
+        useAiCheckBox.setBackground(page);
+        useAiCheckBox.setFocusPainted(false);
+        useAiCheckBox.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         inputTextArea.setFont(normal.deriveFont(Font.PLAIN, 15f));
         inputTextArea.setBackground(surface);
@@ -166,12 +173,16 @@ public class GUI extends JFrame {
         }
 
 
-        hintLabel.setText("Response and source passages entered.");
         resultsTextArea.setForeground(new Color(185, 190, 199));
-        resultsTextArea.setText("Your response is ready for review. Claim extraction and evidence matching are not connected yet.");
-
-        ClaimChecker checker = new ClaimChecker();
-        String result = checker.check(response, sources);
-        resultsTextArea.setText(result);
+        try {
+            hintLabel.setText("Checking response...");
+            ClaimChecker checker = new ClaimChecker();
+            String result = checker.check(response, sources, useAiCheckBox.isSelected());
+            resultsTextArea.setText(result);
+            hintLabel.setText("Check complete.");
+        } catch (RuntimeException exception) {
+            hintLabel.setText("Could not complete the check.");
+            resultsTextArea.setText("Check failed: " + exception.getMessage());
+        }
     }
 }

@@ -20,7 +20,21 @@
             <artifactId>langchain4j-open-ai</artifactId>
             <version>1.23.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>edu.stanford.nlp</groupId>
+            <artifactId>stanford-corenlp</artifactId>
+            <version>4.6.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.stanford.nlp</groupId>
+            <artifactId>stanford-corenlp</artifactId>
+            <version>4.6.0</version>
+            <classifier>models</classifier>
+        </dependency>
     </dependencies>
+
 
     <build>
         <plugins>
