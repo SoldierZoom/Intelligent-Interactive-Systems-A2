@@ -139,13 +139,11 @@
         <properties/>
         <border type="none"/>
         <children>
-          <component id="resultsTextArea" class="javax.swing.JTextArea" binding="resultsTextArea">
+          <component id="resultsTextPane" class="javax.swing.JEditorPane" binding="resultsTextPane">
             <constraints/>
             <properties>
               <editable value="false"/>
-              <lineWrap value="true"/>
-              <text value="Your claim-by-claim review will appear here."/>
-              <wrapStyleWord value="true"/>
+              <contentType value="text/html"/>
             </properties>
           </component>
         </children>

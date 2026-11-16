@@ -58,6 +58,7 @@ public class ClaimChecker {
             return model.chat(prompt);
         } else {
             ArrayList<String> claims = new ArrayList<>();
+            ArrayList<String> passages = new ArrayList<>();
             Document doc = new Document(response);
 
             //loops for how many sentences in document
@@ -95,7 +96,10 @@ public class ClaimChecker {
                 searcher.setSimilarity(new BM25Similarity());
                 QueryParser parser = new QueryParser("passage", analyzer);
 
-                for(String claim : claims) {
+                for(int i=0; i<claims.size(); i++) {
+                    String relevantPassages = "";
+
+                    String claim = claims.get(i);
                     Query query = parser.parse(QueryParser.escape(claim));
                     TopDocs hits = searcher.search(query, 3);
 
@@ -103,19 +107,31 @@ public class ClaimChecker {
                         org.apache.lucene.document.Document passage =
                                 searcher.storedFields().document(hit.doc);
 
-                        System.out.println("Claim: " + claim);
-                        System.out.println("Relevant passage: " + passage.get("passage"));
+                        relevantPassages+='"'+passage.get("passage")+'"'+", ";
                     }
+                    //remove last ", "
+                    if(!relevantPassages.isEmpty()) {
+                        relevantPassages = relevantPassages.substring(0,relevantPassages.length()-2);
+                    }
+
+                    passages.add(relevantPassages);
                 }
                 reader.close();
                 directory.close();
 
             } catch (IOException | ParseException e) {
-                return e.getMessage();
+                return "Problem retrieving passages";
             }
 
-
-            return (claims.toString());
+            //structuring return
+            String returnText = """
+                                | Claims | Source Passage |
+                                | :---: | --- |
+                                """;
+            for(int i=0;i<claims.size();i++) {
+                returnText += "| %s | %s |\n".formatted(claims.get(i),passages.get(i));
+            }
+            return (returnText);
         }
     }
 }

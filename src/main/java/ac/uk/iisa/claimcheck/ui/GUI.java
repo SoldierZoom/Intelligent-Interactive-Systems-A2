@@ -1,6 +1,10 @@
 package ac.uk.iisa.claimcheck.ui;
 
 import ac.uk.iisa.claimcheck.service.ClaimChecker;
+import com.vladsch.flexmark.ext.tables.TablesExtension;
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.parser.Parser;
+import com.vladsch.flexmark.util.data.MutableDataSet;
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,6 +13,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.URL;
+import java.util.Collections;
 
 public class GUI extends JFrame {
     private JPanel mainPanel;
@@ -21,7 +26,7 @@ public class GUI extends JFrame {
     private JLabel resultsLabel;
     private JLabel sourcesLabel;
     private JTextArea inputTextArea;
-    private JTextArea resultsTextArea;
+    private JEditorPane resultsTextPane;
     private JTextArea sourcesTextArea;
     private JButton checkButton;
     private JCheckBox useAiCheckBox;
@@ -30,8 +35,16 @@ public class GUI extends JFrame {
             "Paste the AI-generated answer here. You’ll be able to inspect its claims and supporting evidence.";
     private static final String SOURCES_HINT =
             "Paste the source passages claims should be checked against. Include each source title or link.";
+    private final Parser markdownParser;
+    private final HtmlRenderer markdownRenderer;
 
     public GUI() {
+        MutableDataSet markdownOptions = new MutableDataSet();
+        markdownOptions.set(Parser.EXTENSIONS,
+                Collections.singletonList(TablesExtension.create()));
+        markdownParser = Parser.builder(markdownOptions).build();
+        markdownRenderer = HtmlRenderer.builder(markdownOptions).build();
+
         setTitle("ClaimCheck");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setContentPane(mainPanel);
@@ -91,13 +104,16 @@ public class GUI extends JFrame {
                 BorderFactory.createEmptyBorder(12, 14, 12, 14)));
         inputTextArea.setMargin(new Insets(0, 0, 0, 0));
 
-        resultsTextArea.setFont(normal.deriveFont(Font.PLAIN, 14f));
-        resultsTextArea.setBackground(surface);
-        resultsTextArea.setCaretColor(ink);
-        resultsTextArea.setForeground(muted);
-        resultsTextArea.setBorder(BorderFactory.createCompoundBorder(
+        resultsTextPane.setContentType("text/html");
+        resultsTextPane.setEditable(false);
+        resultsTextPane.setFont(normal.deriveFont(Font.PLAIN, 14f));
+        resultsTextPane.setBackground(surface);
+        resultsTextPane.setCaretColor(ink);
+        resultsTextPane.setForeground(muted);
+        resultsTextPane.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(line),
                 BorderFactory.createEmptyBorder(12, 14, 12, 14)));
+        setReviewMarkdown("Your claim-by-claim review will appear here.");
 
         sourcesTextArea.setFont(normal.deriveFont(Font.PLAIN, 14f));
         sourcesTextArea.setBackground(surface);
@@ -172,17 +188,28 @@ public class GUI extends JFrame {
             return;
         }
 
-
-        resultsTextArea.setForeground(new Color(185, 190, 199));
         try {
             hintLabel.setText("Checking response...");
             ClaimChecker checker = new ClaimChecker();
             String result = checker.check(response, sources, useAiCheckBox.isSelected());
-            resultsTextArea.setText(result);
+            setReviewMarkdown(result);
             hintLabel.setText("Check complete.");
         } catch (RuntimeException exception) {
             hintLabel.setText("Could not complete the check.");
-            resultsTextArea.setText("Check failed: " + exception.getMessage());
+            setReviewMarkdown("**Check failed:** " + exception.getMessage());
         }
+    }
+
+    private void setReviewMarkdown(String markdown) {
+        String renderedBody = markdownRenderer.render(markdownParser.parse(markdown))
+                .replace("<table>", "<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\">");
+        resultsTextPane.setText("""
+                <html>
+                <body style="font-family: Trebuchet MS; font-size: 14pt; color: #f2f4f7; background-color: #383838;">
+                %s
+                </body>
+                </html>
+                """.formatted(renderedBody));
+        resultsTextPane.setCaretPosition(0);
     }
 }
