@@ -6,6 +6,24 @@ import dev.langchain4j.model.openai.OpenAiChatModel;
 import edu.stanford.nlp.simple.Document;
 import edu.stanford.nlp.simple.Sentence;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.store.ByteBuffersDirectory;
+import org.apache.lucene.store.Directory;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 
@@ -52,6 +70,50 @@ public class ClaimChecker {
                                         triple.relationLemmaGloss()+" "+
                                         triple.objectLemmaGloss()));
             }
+            //Passage finder
+
+            try {//BM25 initialise
+                Analyzer analyzer = new StandardAnalyzer();
+                Directory directory = new ByteBuffersDirectory();
+                IndexWriterConfig config = new IndexWriterConfig(analyzer);
+                config.setSimilarity(new BM25Similarity());
+                IndexWriter writer = new IndexWriter(directory,config);
+
+                //Split sources into sentences and add to searchable items
+                Document sourcePassages = new Document(sources);
+                for (Sentence passage : sourcePassages.sentences()) {
+                    org.apache.lucene.document.Document document =
+                            new org.apache.lucene.document.Document();
+                    document.add(new Field("passage", passage.toString(), TextField.TYPE_STORED));
+                    writer.addDocument(document);
+                }
+                writer.close();
+
+                //set up reader and searcher
+                DirectoryReader reader = DirectoryReader.open(directory);
+                IndexSearcher searcher = new IndexSearcher(reader);
+                searcher.setSimilarity(new BM25Similarity());
+                QueryParser parser = new QueryParser("passage", analyzer);
+
+                for(String claim : claims) {
+                    Query query = parser.parse(QueryParser.escape(claim));
+                    TopDocs hits = searcher.search(query, 3);
+
+                    for (ScoreDoc hit : hits.scoreDocs) {
+                        org.apache.lucene.document.Document passage =
+                                searcher.storedFields().document(hit.doc);
+
+                        System.out.println("Claim: " + claim);
+                        System.out.println("Relevant passage: " + passage.get("passage"));
+                    }
+                }
+                reader.close();
+                directory.close();
+
+            } catch (IOException | ParseException e) {
+                return e.getMessage();
+            }
+
 
             return (claims.toString());
         }
