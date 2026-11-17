@@ -188,16 +188,28 @@ public class GUI extends JFrame {
             return;
         }
 
-        try {
-            hintLabel.setText("Checking response...");
-            ClaimChecker checker = new ClaimChecker();
-            String result = checker.check(response, sources, useAiCheckBox.isSelected());
-            setReviewMarkdown(result);
-            hintLabel.setText("Check complete.");
-        } catch (RuntimeException exception) {
-            hintLabel.setText("Could not complete the check.");
-            setReviewMarkdown("**Check failed:** " + exception.getMessage());
-        }
+        boolean useAI = useAiCheckBox.isSelected();
+        String originalButtonText = checkButton.getText();
+        hintLabel.setText("Checking response...");
+        checkButton.setText("Checking...");
+        checkButton.setEnabled(false);
+
+        new Thread(() -> {
+            try {
+                ClaimChecker checker = new ClaimChecker();
+                String result = checker.check(response, sources, useAI);
+
+                setReviewMarkdown(result);
+                hintLabel.setText("Check complete.");
+                checkButton.setText(originalButtonText);
+                checkButton.setEnabled(true);
+            } catch (RuntimeException exception) {
+                hintLabel.setText("Could not complete the check.");
+                setReviewMarkdown("**Check failed:** " + exception.getMessage());
+                checkButton.setText(originalButtonText);
+                checkButton.setEnabled(true);
+            }
+        }).start();
     }
 
     private void setReviewMarkdown(String markdown) {
