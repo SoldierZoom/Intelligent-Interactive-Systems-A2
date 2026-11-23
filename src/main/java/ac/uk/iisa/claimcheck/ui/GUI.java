@@ -34,7 +34,7 @@ public class GUI extends JFrame {
     private static final String INPUT_HINT =
             "Paste the AI-generated answer here. You’ll be able to inspect its claims and supporting evidence.";
     private static final String SOURCES_HINT =
-            "Paste the source passages claims should be checked against. Include each source title or link.";
+            "Paste the source passages claims should be checked against. Include each source passage or link.";
     private final Parser markdownParser;
     private final HtmlRenderer markdownRenderer;
 
@@ -175,12 +175,13 @@ public class GUI extends JFrame {
     }
 
     private void handleCheckResponse() {
+        //if response box empty
         String response = inputTextArea.getText().trim();
         if (response.isEmpty() || response.equals(INPUT_HINT)) {
             hintLabel.setText("Paste an AI response above to get started.");
             return;
         }
-
+        //if sources box empty
         String sources = sourcesTextArea.getText().trim();
         if (sources.isEmpty() || sources.equals(SOURCES_HINT)) {
             hintLabel.setText("Add source passages before checking this response.");
@@ -188,12 +189,14 @@ public class GUI extends JFrame {
             return;
         }
 
+        //update ui to indicate system is checking
         boolean useAI = useAiCheckBox.isSelected();
         String originalButtonText = checkButton.getText();
         hintLabel.setText("Checking response...");
         checkButton.setText("Checking...");
         checkButton.setEnabled(false);
 
+        //creates separate thread for claim checker
         new Thread(() -> {
             try {
                 ClaimChecker checker = new ClaimChecker();
