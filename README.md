@@ -78,6 +78,8 @@ OpenAI Codex (ChatGPT) was used as a development assistant to discuss project st
 
 Suggestions were treated as guidance: code and dependencies were adapted to the project, and the resulting interface and output were checked manually while developing. AI-generated suggestions were not accepted as proof that the claim-checking results are correct; the limitations above still apply.
 
+**Example — progress feedback:** I found that the “Checking response...” message was not visible while a check was running. Codex explained that performing the check on Swing's event thread prevented the interface from repainting, and suggested running the work in the background. I kept the existing interface and adapted the approach so the status and button update before `ClaimChecker` runs on a new thread; the interface then displays the result and restores the button. I checked this by running the application and observing the checking and completion states.
+
 ## Additional files
 
 None
